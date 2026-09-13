@@ -17,19 +17,19 @@
         <h2>Purpose and scope</h2>
         <p>
           YouTube Automation is a private application used solely by its owner
-          to upload prepared videos to the owner's YouTube channel. It is not a
-          public service and does not accept registrations from other users.
+          to manage and upload prepared videos to YouTube channels authorized by
+          the owner. It is not a public service and does not offer public signup.
         </p>
       </section>
 
       <section>
         <h2>Information accessed</h2>
         <p>
-          The application requests the Google OAuth permission needed to upload
-          videos to YouTube. It processes the selected video file and associated
-          publishing metadata, including title, description, tags, category,
-          and privacy status. It receives the YouTube video identifier returned
-          after a successful upload.
+          The application requests Google OAuth permissions to identify an
+          authorized YouTube channel and upload videos to it. It processes the
+          selected video file, channel name and identifier, and publishing
+          metadata including title, description, tags, category, and privacy
+          status. It receives the YouTube video identifier after an upload.
         </p>
       </section>
 
@@ -46,11 +46,13 @@
       <section>
         <h2>Storage and security</h2>
         <p>
-          OAuth credentials are stored as private environment secrets in systems
-          controlled by the owner. Video files and publishing metadata are stored
-          in the owner's private storage and database. Credentials are not placed
-          in public source code. Data is transmitted to Google and YouTube only
-          as required to perform an authorized upload.
+          Dashboard authentication is handled by Supabase Auth. OAuth refresh
+          tokens are encrypted before database storage, and the decryption key is
+          kept in private server and automation secrets. Video files and metadata
+          are stored in private storage and database records protected by access
+          controls. Credentials are not placed in public source code. Data is
+          transmitted to Google and YouTube only for authorized channel access
+          and uploads.
         </p>
       </section>
 
@@ -80,4 +82,3 @@
     <footer>Last updated: September 13, 2026</footer>
   </body>
 </html>
-

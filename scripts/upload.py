@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import logging
 import os
 import sys
@@ -15,6 +16,7 @@ from typing import Any
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from supabase import Client, create_client
 
 YOUTUBE_SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
@@ -61,10 +63,10 @@ def create_supabase_client() -> Client:
     )
 
 
-def create_youtube_client() -> Any:
+def create_youtube_client(refresh_token: str | None = None) -> Any:
     credentials = Credentials(
         token=None,
-        refresh_token=required_env("YOUTUBE_REFRESH_TOKEN"),
+        refresh_token=refresh_token or required_env("YOUTUBE_REFRESH_TOKEN"),
         token_uri="https://oauth2.googleapis.com/token",
         client_id=required_env("YOUTUBE_CLIENT_ID"),
         client_secret=required_env("YOUTUBE_CLIENT_SECRET"),
@@ -73,13 +75,55 @@ def create_youtube_client() -> Any:
     return build("youtube", "v3", credentials=credentials, cache_discovery=False)
 
 
+def decrypt_channel_token(ciphertext: str, iv: str) -> str:
+    key = base64.b64decode(required_env("CHANNEL_TOKEN_ENCRYPTION_KEY"), validate=True)
+    if len(key) != 32:
+        raise ValueError("CHANNEL_TOKEN_ENCRYPTION_KEY must decode to exactly 32 bytes")
+    plaintext = AESGCM(key).decrypt(base64.b64decode(iv), base64.b64decode(ciphertext), None)
+    return plaintext.decode("utf-8")
+
+
+def get_active_channel(supabase: Client) -> dict[str, Any] | None:
+    try:
+        query = supabase.table("youtube_channels").select(
+            "id,user_id,youtube_channel_id,display_name"
+        ).eq("active", True)
+        owner_id = os.environ.get("DASHBOARD_USER_ID", "").strip()
+        if owner_id:
+            query = query.eq("user_id", owner_id)
+        response = query.limit(2).execute()
+    except Exception:
+        LOGGER.warning("Dashboard channel tables unavailable; using legacy YouTube secret")
+        return None
+    channels = list(response.data or [])
+    if not channels:
+        return None
+    if len(channels) > 1:
+        raise RuntimeError("Multiple active channels found; set DASHBOARD_USER_ID")
+    channel = channels[0]
+    token_response = (
+        supabase.table("youtube_channel_tokens")
+        .select("token_ciphertext,token_iv")
+        .eq("channel_id", channel["id"])
+        .single()
+        .execute()
+    )
+    token = token_response.data
+    channel["refresh_token"] = decrypt_channel_token(
+        token["token_ciphertext"], token["token_iv"]
+    )
+    return channel
+
+
 def get_pending_videos(
-    supabase: Client, count: int, repeat: bool = False
+    supabase: Client, count: int, repeat: bool = False, owner_id: str | None = None
 ) -> list[dict[str, Any]]:
     query = supabase.table("videos").select(
         "id,storage_path,title,description,tags,category_id,privacy_status,"
-        "posted,posted_at,created_at"
+        "posted,posted_at,created_at,user_id,channel_id"
     )
+    if owner_id:
+        query = query.eq("user_id", owner_id)
     if repeat:
         # Never-posted rows come first; afterward rotate the least-recent upload.
         query = query.order("posted_at", nullsfirst=True).order("created_at").order("id")
@@ -179,12 +223,42 @@ def mark_posted(supabase: Client, row_id: str, youtube_id: str) -> None:
         raise RuntimeError(f"Supabase update affected no row for video {row_id}")
 
 
+def record_history(
+    supabase: Client,
+    video: dict[str, Any],
+    channel: dict[str, Any] | None,
+    status: str,
+    youtube_id: str | None = None,
+    error_message: str | None = None,
+) -> None:
+    try:
+        supabase.table("upload_history").insert(
+            {
+                "user_id": channel.get("user_id") if channel else video.get("user_id"),
+                "video_id": video.get("id"),
+                "channel_id": channel.get("id") if channel else None,
+                "status": status,
+                "youtube_video_id": youtube_id,
+                "error_message": error_message[:2000] if error_message else None,
+            }
+        ).execute()
+    except Exception:
+        # History is supplementary; never turn a successful upload into a failure.
+        LOGGER.exception("Could not record upload history for video %s", video.get("id"))
+
+
 def main() -> int:
     args = parse_args()
     try:
         supabase = create_supabase_client()
-        youtube = create_youtube_client()
-        videos = get_pending_videos(supabase, args.count, repeat=args.repeat)
+        channel = get_active_channel(supabase)
+        youtube = create_youtube_client(channel.get("refresh_token") if channel else None)
+        videos = get_pending_videos(
+            supabase,
+            args.count,
+            repeat=args.repeat,
+            owner_id=channel.get("user_id") if channel else None,
+        )
     except Exception:
         LOGGER.exception("Could not initialize services or read the Supabase queue")
         return 1
@@ -208,9 +282,15 @@ def main() -> int:
             youtube_id = upload_video(youtube, video, temp_path)
             # Persist immediately so a later failure cannot lose this upload state.
             mark_posted(supabase, row_id, youtube_id)
+            if channel:
+                supabase.table("youtube_channels").update(
+                    {"last_used_at": datetime.now(timezone.utc).isoformat()}
+                ).eq("id", channel["id"]).execute()
+            record_history(supabase, video, channel, "success", youtube_id=youtube_id)
             LOGGER.info("Uploaded video %s successfully: YouTube ID %s", row_id, youtube_id)
-        except Exception:
+        except Exception as exc:
             failures += 1
+            record_history(supabase, video, channel, "failed", error_message=str(exc))
             LOGGER.exception("Video %s failed", row_id)
         finally:
             if temp_path is not None:

@@ -2,6 +2,10 @@
 
 This project uploads finished MP4 files exactly as stored—there is no audio mixing or media transformation. Supabase Storage holds the files, the `videos` table is the sole upload manifest, Pipedream schedules each run, and GitHub Actions performs the upload.
 
+## Private management dashboard
+
+The GitHub Pages site now includes a private Supabase Auth dashboard for uploading/replacing MP4 files, editing metadata, connecting multiple YouTube channels, choosing the active channel, and reviewing upload history. Complete the server-side setup in [DASHBOARD_SETUP.md](DASHBOARD_SETUP.md). The original environment-based single-channel uploader remains available as a fallback until a dashboard channel is connected.
+
 ## OAuth information site
 
 The `docs` directory contains the public application homepage and privacy policy required to move a personal external Google OAuth app from Testing to Production. The `pages.yml` workflow publishes it with GitHub Pages.

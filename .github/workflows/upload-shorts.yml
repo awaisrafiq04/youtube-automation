@@ -46,6 +46,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_BUCKET: shorts-videos
+          CHANNEL_TOKEN_ENCRYPTION_KEY: ${{ secrets.CHANNEL_TOKEN_ENCRYPTION_KEY }}
+          DASHBOARD_USER_ID: ${{ secrets.DASHBOARD_USER_ID }}
         run: >-
           python scripts/upload.py
           --count "${{ inputs.count }}"

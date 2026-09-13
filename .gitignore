@@ -11,4 +11,4 @@ __pycache__/
 client_secret*.json
 token*.json
 oauth*.json
-
+supabase/.env.functions

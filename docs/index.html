@@ -1,45 +1,13 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Information about the private YouTube Automation uploader.">
-    <title>YouTube Automation</title>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <main>
-      <p class="eyebrow">Private publishing tool</p>
-      <h1>YouTube Automation</h1>
-      <p class="intro">
-        YouTube Automation is a private utility used by its owner to upload
-        prepared videos to the owner's YouTube channel on a schedule.
-      </p>
-
-      <section>
-        <h2>What the application does</h2>
-        <p>
-          The application uses Google OAuth authorization to upload videos and
-          their titles, descriptions, tags, category, and privacy setting to the
-          YouTube channel selected by the owner. It does not provide public user
-          accounts and is not offered as a third-party service.
-        </p>
-      </section>
-
-      <section>
-        <h2>Account control</h2>
-        <p>
-          Access is granted only after the channel owner signs in through
-          Google's authorization screen. The owner can revoke access at any time
-          from their Google Account security settings.
-        </p>
-      </section>
-
-      <nav aria-label="Legal information">
-        <a href="privacy.html">Privacy policy</a>
-      </nav>
-    </main>
-    <footer>Last updated: September 13, 2026</footer>
-  </body>
-</html>
-
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Private YouTube Shorts publishing dashboard."><title>Shorts Control Room</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<main id="login-view" class="login-shell"><section class="login-card" aria-labelledby="login-title"><div class="brand-mark" aria-hidden="true">▶</div><p class="eyebrow">Private workspace</p><h1 id="login-title">Shorts Control Room</h1><p class="intro">Sign in to manage videos, publishing channels, and upload history.</p><form id="login-form" class="stack"><label>Email<input id="login-email" type="email" autocomplete="username" required></label><label>Password<input id="login-password" type="password" autocomplete="current-password" required></label><button type="submit" class="button primary">Sign in</button><p id="login-error" class="form-error" role="alert"></p></form><a class="legal-link" href="privacy.html">Privacy policy</a></section></main>
+<div id="dashboard" class="dashboard" hidden><aside class="sidebar"><a class="wordmark" href="#overview" aria-label="Shorts Control Room home"><span>▶</span> Control Room</a><nav aria-label="Dashboard"><button class="nav-item active" data-view="overview">Overview</button><button class="nav-item" data-view="videos">Videos</button><button class="nav-item" data-view="channels">Channels</button><button class="nav-item" data-view="history">History</button></nav><div class="sidebar-foot"><span id="user-email"></span><button id="logout-button" class="text-button">Sign out</button></div></aside>
+<main class="workspace"><header class="topbar"><div><p class="eyebrow">Publishing workspace</p><h1 id="view-title">Overview</h1></div><button id="upload-open" class="button primary">Upload video</button></header>
+<section id="view-overview" class="view active-view"><div class="stat-grid"><article class="stat-card"><span>Videos</span><strong id="stat-videos">—</strong><small>in rotation</small></article><article class="stat-card"><span>Active channel</span><strong id="stat-channel">—</strong><small id="stat-channel-note">not connected</small></article><article class="stat-card"><span>Last upload</span><strong id="stat-last">—</strong><small id="stat-last-note">no activity</small></article></div><div class="panel-grid"><article class="panel"><div class="panel-heading"><div><p class="eyebrow">Queue</p><h2>Next videos</h2></div><button class="text-button" data-go="videos">View all</button></div><div id="next-videos" class="compact-list"></div></article><article class="panel accent-panel"><p class="eyebrow">Schedule</p><h2>09:00 &amp; 20:00</h2><p>Publishing is triggered externally by Pipedream in Asia/Karachi time.</p><span class="status-chip">Managed in Pipedream</span></article></div></section>
+<section id="view-videos" class="view" hidden><div class="panel-heading page-tools"><p id="video-count">Loading videos…</p><button id="upload-open-secondary" class="button secondary">Add video</button></div><div id="video-list" class="video-list"></div><div id="video-empty" class="empty" hidden><h2>No videos yet</h2><p>Upload a finished MP4 to create the first queue item.</p></div></section>
+<section id="view-channels" class="view" hidden><div class="panel intro-panel"><div><p class="eyebrow">Google OAuth</p><h2>Connected YouTube channels</h2><p>The active channel receives the next scheduled uploads.</p></div><button id="connect-channel" class="button primary">Connect channel</button></div><div id="channel-list" class="channel-grid"></div><div id="channel-empty" class="empty" hidden><h2>No channel connected</h2><p>Connect a YouTube channel, then choose it as active.</p></div></section>
+<section id="view-history" class="view" hidden><div class="table-wrap"><table><thead><tr><th>Video</th><th>Channel</th><th>Status</th><th>YouTube ID</th><th>Time</th></tr></thead><tbody id="history-list"></tbody></table></div><div id="history-empty" class="empty" hidden><h2>No upload history</h2><p>Completed and failed upload attempts will appear here.</p></div></section></main></div>
+<dialog id="video-dialog"><form id="video-form" class="dialog-card"><div class="dialog-heading"><div><p class="eyebrow">Queue item</p><h2 id="dialog-title">Upload video</h2></div><button type="button" class="icon-button" data-close aria-label="Close">×</button></div><input id="video-id" type="hidden"><label>MP4 file<input id="video-file" type="file" accept="video/mp4"></label><p class="field-note">Choose a file for a new video or to replace the current file.</p><label>Title<input id="video-title" type="text" maxlength="100" required placeholder="Video title #Shorts"></label><label>Description<textarea id="video-description" rows="4"></textarea></label><label>Tags<input id="video-tags" type="text" placeholder="Shorts, tutorial, tips"></label><div class="field-row"><label>Category ID<input id="video-category" type="text" value="22" required></label><label>Privacy<select id="video-privacy"><option value="private">Private</option><option value="unlisted">Unlisted</option><option value="public">Public</option></select></label></div><label class="checkbox"><input id="video-ready" type="checkbox"> Ready for one-time upload</label><progress id="upload-progress" max="100" value="0" hidden></progress><p id="video-error" class="form-error" role="alert"></p><div class="dialog-actions"><button type="button" class="button secondary" data-close>Cancel</button><button id="video-save" type="submit" class="button primary">Save video</button></div></form></dialog>
+<script src="config.js"></script><script type="module" src="app.js"></script></body></html>

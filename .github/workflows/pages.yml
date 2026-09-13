@@ -31,6 +31,24 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Configure dashboard
+        env:
+          DASHBOARD_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          DASHBOARD_SUPABASE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          config = {
+              "supabaseUrl": os.environ.get("DASHBOARD_SUPABASE_URL", ""),
+              "supabasePublishableKey": os.environ.get("DASHBOARD_SUPABASE_KEY", ""),
+              "bucket": "shorts-videos",
+          }
+          Path("docs/config.js").write_text("window.APP_CONFIG=" + json.dumps(config) + ";\n")
+          PY
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -39,4 +57,3 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
