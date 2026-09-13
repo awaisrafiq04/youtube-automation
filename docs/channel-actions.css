@@ -1,0 +1,17 @@
+.channel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.button.danger {
+  margin-left: auto;
+  border-color: rgba(255, 59, 79, 0.45);
+  background: rgba(255, 59, 79, 0.08);
+  color: #ff8997;
+}
+
+.button.danger:hover {
+  background: rgba(255, 59, 79, 0.18);
+}
