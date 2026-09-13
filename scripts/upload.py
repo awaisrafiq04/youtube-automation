@@ -63,13 +63,17 @@ def create_supabase_client() -> Client:
     )
 
 
-def create_youtube_client(refresh_token: str | None = None) -> Any:
+def create_youtube_client(
+    refresh_token: str | None = None,
+    client_id: str | None = None,
+    client_secret: str | None = None,
+) -> Any:
     credentials = Credentials(
         token=None,
         refresh_token=refresh_token or required_env("YOUTUBE_REFRESH_TOKEN"),
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=required_env("YOUTUBE_CLIENT_ID"),
-        client_secret=required_env("YOUTUBE_CLIENT_SECRET"),
+        client_id=client_id or required_env("YOUTUBE_CLIENT_ID"),
+        client_secret=client_secret or required_env("YOUTUBE_CLIENT_SECRET"),
         scopes=YOUTUBE_SCOPES,
     )
     return build("youtube", "v3", credentials=credentials, cache_discovery=False)
@@ -252,7 +256,16 @@ def main() -> int:
     try:
         supabase = create_supabase_client()
         channel = get_active_channel(supabase)
-        youtube = create_youtube_client(channel.get("refresh_token") if channel else None)
+        if channel:
+            # Dashboard refresh tokens are issued to the Web OAuth client and
+            # must be refreshed with that same client's credentials.
+            youtube = create_youtube_client(
+                channel["refresh_token"],
+                required_env("GOOGLE_CLIENT_ID"),
+                required_env("GOOGLE_CLIENT_SECRET"),
+            )
+        else:
+            youtube = create_youtube_client()
         videos = get_pending_videos(
             supabase,
             args.count,

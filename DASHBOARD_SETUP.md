@@ -103,11 +103,13 @@ Delete the local `supabase/.env.functions` file after confirming deployment. The
 In GitHub **Settings → Secrets and variables → Actions → Secrets**, add:
 
 ```text
+GOOGLE_CLIENT_ID              the Web application client ID from step 4
+GOOGLE_CLIENT_SECRET          the Web application client secret from step 4
 CHANNEL_TOKEN_ENCRYPTION_KEY   the same base64 key from step 5
 DASHBOARD_USER_ID              the Supabase Auth user UUID from step 2
 ```
 
-Keep the existing YouTube client ID, client secret, and refresh token secrets as a fallback until the first dashboard-connected channel succeeds.
+The `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` values must be the same Web application credentials used by the Supabase OAuth functions. Keep the existing `YOUTUBE_*` secrets as a fallback for the original single-channel setup.
 
 ## 8. Connect and test a channel
 
@@ -130,4 +132,3 @@ Connecting another channel repeats step 2 above. Use **Make active** to choose t
 - Refresh tokens are AES-256-GCM encrypted before database storage.
 - The token table has RLS enabled and no browser-access policy.
 - GitHub Actions decrypts only the active channel token at runtime using a repository secret.
-
